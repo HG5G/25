@@ -3,12 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لعبة الطائر القفاز</title>
+    <title>لعبة الطائر القفاز (Flappy Bird)</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="game-container">
-        <div class="bird"></div>
+        
+        <div class="start-screen" id="startScreen">
+            <h1>الطائر القفاز</h1>
+            <p>اضغط على **المسطرة (Spacebar)** للبدء!</p>
+        </div>
+        
+        <div class="bird" id="bird"></div>
     </div>
 
     <script src="script.js"></script>
