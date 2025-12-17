@@ -1,40 +1,107 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@700&display=swap');
+
 body {
     margin: 0;
-    background-color: #333;
+    background-color: #1a1a1a; /* خلفية داكنة لخلق تباين */
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
+    font-family: 'Chakra Petch', sans-serif; /* خط جذاب وعصري */
 }
 
+/* 1. الحاوية (خلفية السماء فقط) */
 .game-container {
     width: 500px;
     height: 700px;
-    background-color: skyblue;
     position: relative;
-    border-radius: 10px;
-    border: 5px solid #000;
-    overflow: hidden; /* مهم لإخفاء الأنابيب وهي تتحرك */
+    border-radius: 15px; /* حواف أكثر نعومة */
+    border: 8px solid #333; /* إطار سميك وداكن */
+    overflow: hidden; 
+    
+    /* خلفية السماء الزرقاء المتدرجة (لتأثير أفضل) */
+    background: linear-gradient(to top, #65a7f9 0%, #7de0ff 100%); 
 }
 
+/* 2. الطائر */
 .bird {
     width: 40px;
     height: 40px;
-    background-color: orange;
-    border-radius: 50%;
-    border: 3px solid #000;
     position: absolute;
     z-index: 10; 
+    object-fit: contain;
+    transition: transform 0.1s linear; 
 }
 
-/* تصميم شاشة البداية / النهاية */
+/* ********** 3. تصميم الأنابيب المُحسَّن والجذاب (تأثير ثلاثي الأبعاد) ********** */
+.pipe {
+    position: absolute;
+    width: 60px; 
+    background-color: #3f7e00; /* اللون الأخضر الأساسي */
+    border: 2px solid #1f3f00; 
+    
+    /* إضاءة جانبية لتأثير 3D */
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.4), 
+                -5px 0 5px rgba(255, 255, 255, 0.2) inset; /* إضاءة من اليسار */
+    
+    /* مهم: لا نستخدم LEFT أو RIGHT هنا - يتم التحكم بها في JS */
+}
+
+/* تصميم الجزء العلوي والسفلي (الرأس) للأنابيب */
+.pipe::after {
+    content: '';
+    display: block;
+    position: absolute;
+    width: 85px; /* جعل الرأس أعرض (85px) */
+    height: 35px; /* ارتفاع الرأس */
+    background: linear-gradient(to right, #455a64, #78909c); /* تدرج لوني للرأس */
+    border: 3px solid #1f3f00;
+    border-radius: 5px;
+    left: -15px; /* لتوسيط الرأس على جسم الأنبوب */
+    z-index: 2; /* لضمان أن الرأس يغطي الجسم */
+    
+    /* ظل للرأس يضيف عمقاً */
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+.top-pipe::after {
+    top: -3px; /* رفع قليلاً لضمان التغطية */
+    border-bottom: none;
+}
+
+.bottom-pipe::after {
+    bottom: -3px; /* خفض قليلاً لضمان التغطية */
+    border-top: none;
+}
+/* ************************************************* */
+
+
+/* 4. عرض النتيجة (مظهر ذهبي) */
+.score-display {
+    position: absolute;
+    top: 20px;
+    width: 100%;
+    text-align: center;
+    font-size: 70px;
+    font-weight: 900;
+    z-index: 15;
+    
+    /* تأثير اللون الذهبي */
+    color: #ffd700; 
+    text-shadow: 
+        0 0 5px #ffeb3b, 
+        0 0 10px #ffc107, 
+        2px 2px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* 5. شاشة البداية / النهاية (تأثير النيون) */
 .start-screen {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7); 
+    background-color: rgba(0, 0, 0, 0.85); /* خلفية أغمق */
     color: white;
     display: flex;
     flex-direction: column;
@@ -43,23 +110,21 @@ body {
     text-align: center;
     font-size: 24px;
     z-index: 20; 
-    cursor: pointer;
     user-select: none;
 }
 
-/* تصميم الأنابيب (الحواجز) */
-.pipe {
-    position: absolute;
-    width: 60px; /* عرض الأنبوب */
-    background-color: green;
-    border: 3px solid darkgreen;
-    right: 0; /* تبدأ من اليمين */
+.start-screen h1 {
+    font-size: 80px;
+    margin-bottom: 10px;
+    /* تأثير توهج النيون */
+    color: #f0f; 
+    text-shadow: 
+        0 0 7px #f0f, 
+        0 0 15px #f0f, 
+        0 0 25px #ff00ff;
 }
 
-.top-pipe {
-    border-bottom: none;
-}
-
-.bottom-pipe {
-    border-top: none;
+.start-screen p {
+    font-size: 20px;
+    color: #ccc;
 }
