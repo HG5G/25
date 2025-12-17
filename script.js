@@ -1,71 +1,93 @@
-// 1. تحديد العناصر من HTML
+// ==========================================================
+// 1. تعريف العناصر والثوابت
+// ==========================================================
+
 const gameContainer = document.querySelector('.game-container');
 const bird = document.getElementById('bird');
 const startScreen = document.getElementById('startScreen');
+const scoreDisplay = document.getElementById('scoreDisplay'); 
 
-// 2. تحديد الثوابت والمتغيرات
+// أسماء صور الطيران للحركة
+const birdImages = ["bird_up.png", "bird_down.png"]; 
+let birdImageIndex = 0; 
+let animationTimerId; 
+
 const containerHeight = 700; 
 const containerWidth = 500;
 const birdDiameter = 40;     
-let birdBottom = containerHeight / 2; // موضع الطائر الأولي من الأسفل
-let birdLeft = 50; // موضع الطائر الأفقي
-let gravity = 3; 
-let jumpStrength = 50; 
-let pipeGap = 180; // الفجوة بين الأنبوب العلوي والسفلي
-let pipeSpeed = 5; // سرعة حركة الأنابيب
+let birdBottom = containerHeight / 2; 
+const birdLeft = 50; // الطائر ثابت على اليسار
+
+// قيم صعوبة محسنة
+let gravity = 2.5;      
+let jumpStrength = 45;  
+let pipeGap = 200;      
+let pipeSpeed = 4;      
+const pipeWidth = 60;   
+
 let isGameOver = false;
 let isGameStarted = false;
 let gameTimerId; 
-let pipeTimerId; 
 let score = 0;
+let deathFallTimer; 
 
 // ==========================================================
-// A. منطق الطائر واللعبة الأساسي
+// 2. منطق الطائر والقفز والرسوم المتحركة
 // ==========================================================
 
-// 3. دالة الرسم (تحديث موضع الطائر)
+function animateBird() {
+    birdImageIndex = (birdImageIndex + 1) % birdImages.length; 
+    bird.src = birdImages[birdImageIndex];
+}
+
 function drawBird() {
     bird.style.bottom = birdBottom + 'px';
     bird.style.left = birdLeft + 'px';
+    
+    if (!isGameOver) {
+        const rotationAngle = (birdBottom - containerHeight / 2) / 4; 
+        bird.style.transform = `rotate(${rotationAngle}deg)`;
+    }
 }
 
-// 4. دالة حركة اللعبة الأساسية (Game Loop)
 function startGameLoop() {
     gameTimerId = setInterval(() => {
-        if (isGameStarted) {
-            // تطبيق الجاذبية
-            birdBottom -= gravity;
+        
+        if (isGameStarted) { 
+            
+            birdBottom -= gravity; 
             drawBird();
 
-            // تحقق من الاصطدام بالأرض
             if (birdBottom <= 0) {
-                gameOver();
+                gameOver("سقطت بعيداً!");
+            }
+            if (birdBottom >= containerHeight - birdDiameter) {
+                gameOver("اصطدمت بالسقف!");
             }
         }
     }, 20); 
 }
 
-// 5. دالة القفز
 function jump() {
     if (!isGameStarted || isGameOver) return; 
 
-    // منع القفز خارج السقف
     if (birdBottom < containerHeight - birdDiameter - 10) {
         birdBottom += jumpStrength; 
     }
-    drawBird();
 }
 
-// 6. التحكم في ضغط المسطرة (Spacebar)
 document.addEventListener('keydown', (e) => {
-    if (e.keyCode === 32) { // 32 هو كود المسطرة
+    if (e.keyCode === 32) { 
         
         if (!isGameStarted) {
-            // البدء: إخفاء الشاشة وبدء الأنابيب
             startScreen.style.display = 'none';
             isGameStarted = true;
-            score = 0; // إعادة تعيين النتيجة
-            createPipes(); // البدء في إنشاء الأنابيب
+            score = 0; 
+            scoreDisplay.innerText = score; 
+            
+            animationTimerId = setInterval(animateBird, 100); 
+            
+            createPipes(); 
         } 
         
         if (isGameStarted && !isGameOver) {
@@ -75,22 +97,20 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ==========================================================
-// B. منطق الأنابيب والاصطدام
+// 3. منطق الأنابيب والاصطدام (الحركة التقليدية: اليمين لليسار)
 // ==========================================================
 
-// دالة توليد رقم عشوائي بين حدين (لارتفاع الأنابيب)
 function randomNumber(min, max) {
     return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
 function createPipes() {
-    // تحديد ارتفاع عشوائي للأنبوب السفلي (بين 100 و 400 بكسل)
-    let bottomPipeHeight = randomNumber(100, 400); 
-    // تحديد ارتفاع الأنبوب العلوي بناءً على الفجوة
+    let bottomPipeHeight = randomNumber(100, containerHeight - pipeGap - 100); 
     let topPipeHeight = containerHeight - bottomPipeHeight - pipeGap; 
-    let pipeLeft = containerWidth; // تبدأ الأنابيب من أقصى اليمين
+    
+    // ********** الأنابيب تبدأ من خارج اليمين **********
+    let pipeRight = -pipeWidth; // نستخدم RIGHT الآن للحركة
 
-    // 1. إنشاء عنصر الأنبوب العلوي
     const topPipe = document.createElement('div');
     const bottomPipe = document.createElement('div');
 
@@ -98,85 +118,116 @@ function createPipes() {
         topPipe.classList.add('pipe', 'top-pipe');
         bottomPipe.classList.add('pipe', 'bottom-pipe');
         
-        // إعداد خصائص الارتفاع والموقع
         topPipe.style.height = topPipeHeight + 'px';
         bottomPipe.style.height = bottomPipeHeight + 'px';
-        bottomPipe.style.bottom = 0 + 'px'; // الأنبوب السفلي يبدأ من الأسفل
+        bottomPipe.style.bottom = 0 + 'px'; 
         
-        // إضافتها إلى حاوية اللعبة
+        // ********** تعيين الموضع الأولي لـ RIGHT **********
+        topPipe.style.right = pipeRight + 'px'; 
+        bottomPipe.style.right = pipeRight + 'px'; 
+        // *************************************************
+
         gameContainer.appendChild(topPipe);
         gameContainer.appendChild(bottomPipe);
     }
 
-    // 2. دالة تحريك الأنبوب والتحقق من الاصطدام
+    let hasScored = false; 
+
     function movePipe() {
         if (isGameStarted && !isGameOver) {
-            pipeLeft -= pipeSpeed; // تحريك الأنبوب نحو اليسار
-            topPipe.style.right = pipeLeft + 'px';
-            bottomPipe.style.right = pipeLeft + 'px';
+            
+            // ********** حركة الأنابيب نحو اليسار (بزيادة قيمة RIGHT) **********
+            pipeRight += pipeSpeed; 
+            topPipe.style.right = pipeRight + 'px'; 
+            bottomPipe.style.right = pipeRight + 'px'; 
+            // *************************************************************
 
-            // إذا خرج الأنبوب من الشاشة
-            if (pipeLeft <= -60) {
+
+            // تسجيل النقاط (يتم التسجيل عندما يتجاوز الأنبوب موضع الطائر من جهة اليسار)
+            // لحساب الموضع الأفقي للطائر: (containerWidth - pipeRight - pipeWidth)
+            const pipeLeft = containerWidth - pipeRight - pipeWidth; 
+
+            if (pipeLeft < birdLeft && !hasScored) {
+                score++;
+                scoreDisplay.innerText = score;
+                hasScored = true;
+            }
+
+            // إزالة الأنابيب (عندما يخرج الأنبوب من اليسار)
+            if (pipeRight >= containerWidth) { 
                 clearInterval(pipeTimerId);
-                gameContainer.removeChild(topPipe);
-                gameContainer.removeChild(bottomPipe);
+                topPipe.remove();
+                bottomPipe.remove();
                 return;
             }
 
-            // 3. التحقق من الاصطدام (Collision Detection)
+            // التحقق من الاصطدام 
             if (
                 // هل الأنبوب في المدى الأفقي للطائر؟
                 pipeLeft < birdLeft + birdDiameter &&
-                pipeLeft + 60 > birdLeft && 
-                
-                // هل الطائر اصطدم بالأنبوب العلوي أو السفلي؟
+                pipeLeft + pipeWidth > birdLeft && 
                 (birdBottom < bottomPipeHeight || birdBottom > containerHeight - topPipeHeight - birdDiameter) 
             ) {
-                gameOver();
+                gameOver("اصطدمت بحاجز!");
             }
         }
     }
 
-    // تشغيل دالة التحريك كل 20 ملي ثانية
     let pipeTimerId = setInterval(movePipe, 20); 
 
-    // إنشاء أنبوب جديد كل 3 ثواني
-    if (!isGameOver) {
+    if (!isGameOver && isGameStarted) {
         setTimeout(createPipes, 3000); 
     }
 }
 
 // ==========================================================
-// C. دالة إنهاء اللعبة وإعادة التعيين
+// 4. دالة السقوط الدرامي بعد الموت
 // ==========================================================
 
-function gameOver() {
+function deathFall() {
+    deathFallTimer = setInterval(() => {
+        birdBottom -= gravity * 2; 
+        bird.style.bottom = birdBottom + 'px';
+        
+        if (birdBottom <= -birdDiameter) {
+            clearInterval(deathFallTimer);
+            
+            startScreen.style.display = 'flex'; 
+            
+            birdBottom = containerHeight / 2;
+            bird.src = birdImages[0]; 
+            bird.style.transform = `rotate(0deg)`; 
+            drawBird(); 
+            isGameOver = false; 
+        }
+    }, 20);
+}
+
+// ==========================================================
+// 5. دالة إنهاء اللعبة
+// ==========================================================
+
+function gameOver(reason) {
     if (isGameOver) return;
     
-    // إيقاف جميع الحلقات
     clearInterval(gameTimerId); 
+    clearInterval(animationTimerId); // إيقاف الحركة
     isGameOver = true;
     isGameStarted = false;
     
-    // إزالة جميع الأنابيب الموجودة
-    const pipes = document.querySelectorAll('.pipe');
-    pipes.forEach(pipe => {
+    document.querySelectorAll('.pipe').forEach(pipe => {
         pipe.remove();
     });
 
-    // إعادة وضع الطائر في المنتصف
-    birdBottom = containerHeight / 2;
-    drawBird();
-
-    // إظهار شاشة النهاية
-    startScreen.querySelector('h1').innerText = 'انتهت اللعبة!';
-    startScreen.querySelector('p').innerText = 'اضغط المسطرة للبدء من جديد.';
-    startScreen.style.display = 'flex'; 
-
-    // إعادة تعيين حالة اللعبة للبداية
-    isGameOver = false;
+    startScreen.querySelector('h1').innerText = `انتهت اللعبة! (${reason})`;
+    startScreen.querySelector('p').innerHTML = `نقاطك النهائية: <b>${score}</b>. اضغط المسطرة للبدء من جديد.`;
+    
+    bird.src = "bird_dead.png"; 
+    bird.style.transform = `rotate(90deg)`; 
+    
+    deathFall(); 
 }
 
-// 8. تشغيل اللعبة (لتبدأ حلقة الجاذبية ولكنها لا تعمل إلا عند ضغط المسطرة)
+// 6. التشغيل الأولي
 drawBird(); 
 startGameLoop();
