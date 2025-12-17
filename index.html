@@ -3,18 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لعبة الطائر القفاز (Flappy Bird)</title>
+    <title>الطائر القفاز المحترف - V2</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="game-container">
         
+        <div class="score-display" id="scoreDisplay">0</div> 
+        
         <div class="start-screen" id="startScreen">
             <h1>الطائر القفاز</h1>
-            <p>اضغط على **المسطرة (Spacebar)** للبدء!</p>
+            <p>اضغط على **المسطرة (Spacebar)** لبدء التحدي!</p>
         </div>
         
-        <div class="bird" id="bird"></div>
+        <img class="bird" id="bird" src="bird_up.png" alt="الطائر">
     </div>
 
     <script src="script.js"></script>
