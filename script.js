@@ -1,7 +1,6 @@
 // ==========================================================
 // 1. تعريف العناصر والثوابت
 // ==========================================================
-
 const gameContainer = document.querySelector('.game-container');
 const bird = document.getElementById('bird');
 const startScreen = document.getElementById('startScreen');
@@ -9,13 +8,21 @@ const scoreDisplay = document.getElementById('scoreDisplay');
 const cloudsContainer = document.querySelector('.clouds-container'); 
 const timerDisplay = document.getElementById('timerDisplay'); 
 
-// عناصر الواجهة الاحترافية المطورة
+// عناصر الواجهة الاحترافية
 const initialInstructions = document.getElementById('initialInstructions');
 const gameOverStats = document.getElementById('gameOverStats');
 const finalScore = document.getElementById('finalScore');
 const finalTime = document.getElementById('finalTime');
 const heroBird = document.getElementById('heroBird'); 
 const mainTitle = document.getElementById('mainTitle'); 
+
+// --- نظام الأصوات ---
+const jumpSound = new Audio('jump.mp3');
+const hitSound = new Audio('hit.mp3');
+const scoreSound = new Audio('score.mp3');
+const backgroundMusic = new Audio('background.mp3');
+backgroundMusic.loop = true; 
+backgroundMusic.volume = 0.4; // مستوى صوت هادئ للموسيقى
 
 const birdImages = ["bird_up.png", "bird_down.png"]; 
 let birdImageIndex = 0; 
@@ -42,15 +49,13 @@ let score = 0;
 let deathFallTimer; 
 let pipeSpawnTimer; 
 
-// متغيرات الوقت والسكور العالي
 let startTime;
 let timerInterval;
 let highScore = localStorage.getItem('flappyHighScore') || 0;
 
 // ==========================================================
-// 2. منطق التحكم وعداد الوقت
+// 2. منطق التحكم والوقت
 // ==========================================================
-
 function updateTimer() {
     let now = Date.now();
     let diff = now - startTime;
@@ -63,6 +68,7 @@ function handleAction() {
     if (isGameOver && birdBottom > -birdDiameter) return;
     if (!isGameStarted) {
         resetGame(); 
+        backgroundMusic.play().catch(() => {}); // بدء الموسيقى عند أول تفاعل
     } else {
         jump();
     }
@@ -75,7 +81,6 @@ function resetGame() {
     birdBottom = containerHeight / 2;
     pipeSpeed = 4;
     spawnInterval = 3000;
-    currentPipeClass = 'level-1';
     
     startScreen.style.display = 'none';
     startScreen.style.pointerEvents = 'none';
@@ -86,12 +91,13 @@ function resetGame() {
     scoreDisplay.innerText = score;
     timerDisplay.innerText = "00:00"; 
     
+    // إخفاء العصفور الصغير من الخلفية وإظهاره للعب
     bird.style.display = 'block'; 
     bird.src = birdImages[0];
     bird.style.opacity = "1"; 
     bird.style.zIndex = "10"; 
     bird.style.transform = `rotate(0deg)`;
-    bird.style.left = birdLeft + 'px'; // إعادة التموضع الأفقي الأصلي
+    bird.style.left = birdLeft + 'px';
 
     startTime = Date.now();
     clearInterval(timerInterval);
@@ -107,71 +113,32 @@ function resetGame() {
     setTimeout(createPipes, 100); 
 }
 
-document.addEventListener('keydown', (e) => {
-    if (e.code === "Space") handleAction();
-});
-
-gameContainer.addEventListener('touchstart', (e) => {
-    e.preventDefault(); 
-    handleAction();
-}, { passive: false });
-
-function animateBird() {
-    birdImageIndex = (birdImageIndex + 1) % birdImages.length; 
-    bird.src = birdImages[birdImageIndex];
-}
-
-function drawBird() {
-    bird.style.bottom = birdBottom + 'px';
-    if (!isGameOver) {
-        const rotationAngle = (birdBottom - containerHeight / 2) / 4; 
-        bird.style.transform = `rotate(${rotationAngle}deg)`;
-    }
-}
-
-function startGameLoop() {
-    gameTimerId = setInterval(() => {
-        if (isGameStarted && !isGameOver) { 
-            birdBottom -= gravity; 
-            drawBird();
-            if (birdBottom <= 0) gameOver("سقطت!");
-            if (birdBottom >= containerHeight - birdDiameter) gameOver("اصطدمت بالسقف!");
-        }
-    }, 20); 
-}
-
 function jump() {
     if (birdBottom < containerHeight - birdDiameter - 10) {
         birdBottom += jumpStrength; 
+        jumpSound.currentTime = 0; // تصفير الوقت للقفز السريع
+        jumpSound.play();
     }
 }
 
 // ==========================================================
-// 3. منطق الأنابيب والتصادم (الحاجز الصلب)
+// 3. الأنابيب والتصادم (الحاجز الصلب)
 // ==========================================================
-
-function randomNumber(min, max) {
-    return Math.floor(Math.random() * (max - min + 1) + min);
-}
-
 function createPipes() {
     if (isGameOver || !isGameStarted) return; 
 
-    let bottomPipeHeight = randomNumber(100, containerHeight - pipeGap - 100); 
+    let bottomPipeHeight = Math.floor(Math.random() * (containerHeight - pipeGap - 200) + 100); 
     let topPipeHeight = containerHeight - bottomPipeHeight - pipeGap; 
     let pipeRight = -pipeWidth; 
 
     const topPipe = document.createElement('div');
     const bottomPipe = document.createElement('div');
-
     topPipe.classList.add('pipe', 'top-pipe', currentPipeClass);
     bottomPipe.classList.add('pipe', 'bottom-pipe', currentPipeClass);
-    
     topPipe.style.height = topPipeHeight + 'px';
     bottomPipe.style.height = bottomPipeHeight + 'px';
     topPipe.style.top = 0; 
     bottomPipe.style.bottom = 0;
-    
     topPipe.style.right = pipeRight + 'px'; 
     bottomPipe.style.right = pipeRight + 'px'; 
     gameContainer.appendChild(topPipe);
@@ -184,19 +151,17 @@ function createPipes() {
             pipeRight += pipeSpeed; 
             topPipe.style.right = pipeRight + 'px'; 
             bottomPipe.style.right = pipeRight + 'px'; 
-
             const pipeLeft = containerWidth - pipeRight - pipeWidth; 
 
             if (pipeLeft < birdLeft && !hasScored) {
                 score++;
                 scoreDisplay.innerText = score;
                 hasScored = true;
+                scoreSound.play(); // صوت النقطة
 
                 if (score % 10 === 0 && score <= 50) {
                     pipeSpeed += 0.3; 
                     if (spawnInterval > 1500) spawnInterval -= 250; 
-                    let level = score / 10;
-                    currentPipeClass = `level-${level + 1}`;
                 }
             }
 
@@ -207,7 +172,7 @@ function createPipes() {
                 return;
             }
 
-            // الكشف الدقيق عن التصادم
+            // التصادم الدقيق
             const birdRect = bird.getBoundingClientRect();
             const topPipeRect = topPipe.getBoundingClientRect();
             const bottomPipeRect = bottomPipe.getBoundingClientRect();
@@ -217,54 +182,56 @@ function createPipes() {
                 birdRect.left < topPipeRect.right - 5 && 
                 (birdRect.top < topPipeRect.bottom - 2 || birdRect.bottom > bottomPipeRect.top + 2)
             ) {
-                // إيقاف حركة هذا الأنبوب فوراً ليظهر كحاجز
-                clearInterval(pipeTimerId);
-                gameOver("ارتطام!");
+                clearInterval(pipeTimerId); // إيقاف الأنبوب ليعمل كحاجز
+                gameOver();
             }
         } else {
             clearInterval(pipeTimerId);
         }
     }
-
     let pipeTimerId = setInterval(movePipe, 20); 
     pipeSpawnTimer = setTimeout(createPipes, spawnInterval); 
 }
 
 // ==========================================================
-// 4. نظام السحاب
+// 4. النهاية والنتائج
 // ==========================================================
+function gameOver() {
+    if (isGameOver) return;
+    isGameOver = true;
+    isGameStarted = false;
 
-function createCloud() {
-    if (document.querySelectorAll('.cloud').length >= 4) return;
-    const cloud = document.createElement('img');
-    const cloudImages = ["cloud1.png", "cloud2.png", "cloud3.png", "cloud4.png"];
-    cloud.src = cloudImages[Math.floor(Math.random() * cloudImages.length)];
-    cloud.classList.add('cloud');
-    let cloudSpeed = 0.6; 
-    let cloudRight = -250; 
-    const lanes = [400, 520, 620];
-    let cloudBottom = lanes[Math.floor(Math.random() * lanes.length)] + randomNumber(-15, 15);
-    let cloudSize = randomNumber(130, 180); 
-    let cloudOpacity = randomNumber(5, 8) / 10;
-    cloud.style.width = cloudSize + 'px';
-    cloud.style.bottom = cloudBottom + 'px';
-    cloud.style.right = cloudRight + 'px';
-    cloud.style.opacity = cloudOpacity;
-    cloudsContainer.appendChild(cloud);
-    let cloudTimer = setInterval(() => {
-        cloudRight += cloudSpeed;
-        cloud.style.right = cloudRight + 'px';
-        if (cloudRight > containerWidth + 300) {
-            clearInterval(cloudTimer);
-            cloud.remove();
-        }
-    }, 20);
+    hitSound.play(); // صوت الارتطام
+    backgroundMusic.pause();
+    backgroundMusic.currentTime = 0;
+
+    clearInterval(timerInterval); 
+    clearInterval(gameTimerId); 
+    clearInterval(animationTimerId); 
+    clearTimeout(pipeSpawnTimer);
+
+    // تثبيت العصفور أفقياً
+    bird.style.left = bird.offsetLeft + 'px';
+
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('flappyHighScore', highScore);
+    }
+
+    bird.src = "bird_dead.png"; 
+    bird.style.transform = `rotate(90deg)`; 
+
+    mainTitle.style.display = 'none'; 
+    heroBird.src = "bird_dead.png"; 
+    heroBird.style.transform = "scale(1.5) rotate(90deg)"; 
+
+    initialInstructions.style.display = 'none';
+    gameOverStats.style.display = 'block';
+    finalScore.innerText = score;
+    finalTime.innerText = timerDisplay.innerText;
+    
+    deathFall(); 
 }
-setInterval(createCloud, 10000);
-
-// ==========================================================
-// 5. النهاية والسقوط والنتائج
-// ==========================================================
 
 function deathFall() {
     clearInterval(deathFallTimer);
@@ -280,48 +247,40 @@ function deathFall() {
     }, 20);
 }
 
-function gameOver(reason) {
-    if (isGameOver) return;
-    isGameOver = true;
-    isGameStarted = false;
-
-    // إيقاف كل المؤقتات العامة
-    clearInterval(timerInterval); 
-    clearInterval(gameTimerId); 
-    clearInterval(animationTimerId); 
-    clearTimeout(pipeSpawnTimer);
-
-    // تثبيت العصفور أفقياً عند نقطة الارتطام
-    const currentLeft = bird.offsetLeft;
-    bird.style.left = currentLeft + 'px';
-
-    // تحديث الرقم القياسي
-    if (score > highScore) {
-        highScore = score;
-        localStorage.setItem('flappyHighScore', highScore);
-    }
-
-    bird.src = "bird_dead.png"; 
-    bird.style.zIndex = "200"; 
-    bird.style.transform = `rotate(90deg)`; 
-
-    mainTitle.style.display = 'none'; 
-    heroBird.src = "bird_dead.png"; 
-    heroBird.style.transform = "scale(1.5) rotate(90deg)"; 
-
-    if(initialInstructions) initialInstructions.style.display = 'none';
-    if(gameOverStats) gameOverStats.style.display = 'block';
-    
-    finalScore.innerText = score;
-    finalTime.innerText = timerDisplay.innerText;
-    
-    const highScoreElement = document.getElementById('highScore');
-    if(highScoreElement) highScoreElement.innerText = highScore;
-
-    deathFall(); 
+function animateBird() {
+    birdImageIndex = (birdImageIndex + 1) % birdImages.length; 
+    bird.src = birdImages[birdImageIndex];
 }
 
-// تشغيل أولي
+function drawBird() {
+    bird.style.bottom = birdBottom + 'px';
+    if (!isGameOver) {
+        const rotationAngle = (birdBottom - containerHeight / 2) / 4; 
+        bird.style.transform = `rotate(${rotationAngle}deg)`;
+    }
+}
+
+function createCloud() {
+    if (document.querySelectorAll('.cloud').length >= 4) return;
+    const cloud = document.createElement('img');
+    const cloudImages = ["cloud1.png", "cloud2.png", "cloud3.png", "cloud4.png"];
+    cloud.src = cloudImages[Math.floor(Math.random() * cloudImages.length)];
+    cloud.classList.add('cloud');
+    let cloudRight = -250; 
+    cloud.style.bottom = Math.floor(Math.random() * 200 + 400) + 'px';
+    cloud.style.right = cloudRight + 'px';
+    cloudsContainer.appendChild(cloud);
+    let cloudTimer = setInterval(() => {
+        cloudRight += 0.6;
+        cloud.style.right = cloudRight + 'px';
+        if (cloudRight > containerWidth + 300) {
+            clearInterval(cloudTimer);
+            cloud.remove();
+        }
+    }, 20);
+}
+setInterval(createCloud, 10000);
+
+// تشغيل أولي (إخفاء العصفور الصغير)
 drawBird();
-bird.style.display = 'none'; 
-setTimeout(createCloud, 1000);
+bird.style.display = 'none';
