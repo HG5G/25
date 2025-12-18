@@ -1,7 +1,22 @@
 // ==========================================================
-// 1. تعريف العناصر والثوابت
+// 1. تعريف الأصوات وإعدادات التشغيل
 // ==========================================================
+const jumpSound = new Audio('jump.mp3');
+const scoreSound = new Audio('score.mp3');
+const hitSound = new Audio('hit.mp3');
+const backgroundMusic = new Audio('background.mp3');
 
+// إعدادات لضمان الجاهزية
+[jumpSound, scoreSound, hitSound, backgroundMusic].forEach(sound => {
+    sound.load();
+});
+
+backgroundMusic.loop = true;
+backgroundMusic.volume = 0.3;
+
+// ==========================================================
+// 2. تعريف العناصر والثوابت
+// ==========================================================
 const gameContainer = document.querySelector('.game-container');
 const bird = document.getElementById('bird');
 const startScreen = document.getElementById('startScreen');
@@ -9,23 +24,12 @@ const scoreDisplay = document.getElementById('scoreDisplay');
 const cloudsContainer = document.querySelector('.clouds-container'); 
 const timerDisplay = document.getElementById('timerDisplay'); 
 
-// عناصر الواجهة الاحترافية المطورة
 const initialInstructions = document.getElementById('initialInstructions');
 const gameOverStats = document.getElementById('gameOverStats');
 const finalScore = document.getElementById('finalScore');
 const finalTime = document.getElementById('finalTime');
 const heroBird = document.getElementById('heroBird'); 
 const mainTitle = document.getElementById('mainTitle'); 
-
-// --- إضافة تعريفات الأصوات ---
-const jumpSound = new Audio('jump.mp3');
-const scoreSound = new Audio('score.mp3');
-const hitSound = new Audio('hit.mp3');
-const backgroundMusic = new Audio('background.mp3');
-
-// إعدادات الموسيقى
-backgroundMusic.loop = true;
-backgroundMusic.volume = 0.4; // خفض صوت الخلفية قليلاً
 
 const birdImages = ["bird_up.png", "bird_down.png"]; 
 let birdImageIndex = 0; 
@@ -37,7 +41,7 @@ const birdDiameter = 40;
 let birdBottom = containerHeight / 2; 
 const birdLeft = 50; 
 
-let gravity = 2.5;       
+let gravity = 2.5;        
 let jumpStrength = 45;  
 let pipeGap = 200;      
 let pipeSpeed = 4;      
@@ -57,7 +61,7 @@ let timerInterval;
 let highScore = localStorage.getItem('flappyHighScore') || 0;
 
 // ==========================================================
-// 2. منطق التحكم وعداد الوقت
+// 3. منطق التحكم وعداد الوقت
 // ==========================================================
 
 function updateTimer() {
@@ -86,9 +90,9 @@ function resetGame() {
     spawnInterval = 3000;
     currentPipeClass = 'level-1';
     
-    // تشغيل موسيقى الخلفية عند البدء
+    // تشغيل موسيقى الخلفية
     backgroundMusic.currentTime = 0;
-    backgroundMusic.play().catch(e => console.log("Audio play deferred"));
+    backgroundMusic.play().catch(e => console.log("Waiting for interaction..."));
 
     startScreen.style.display = 'none';
     startScreen.style.pointerEvents = 'none';
@@ -156,14 +160,14 @@ function startGameLoop() {
 function jump() {
     if (birdBottom < containerHeight - birdDiameter - 10) {
         birdBottom += jumpStrength; 
-        // تشغيل صوت القفز
+        // صوت النط
         jumpSound.currentTime = 0;
         jumpSound.play();
     }
 }
 
 // ==========================================================
-// 3. منطق الأنابيب والتصادم
+// 4. منطق الأنابيب والتصادم
 // ==========================================================
 
 function randomNumber(min, max) {
@@ -208,7 +212,7 @@ function createPipes() {
                 scoreDisplay.innerText = score;
                 hasScored = true;
 
-                // تشغيل صوت السكور
+                // صوت السكور
                 scoreSound.currentTime = 0;
                 scoreSound.play();
 
@@ -249,7 +253,7 @@ function createPipes() {
 }
 
 // ==========================================================
-// 4. نظام السحاب
+// 5. نظام السحاب
 // ==========================================================
 
 function createCloud() {
@@ -281,7 +285,7 @@ function createCloud() {
 setInterval(createCloud, 10000);
 
 // ==========================================================
-// 5. النهاية والسقوط والنتائج
+// 6. النهاية والسقوط والنتائج
 // ==========================================================
 
 function deathFall() {
@@ -303,7 +307,7 @@ function gameOver(reason) {
     isGameOver = true;
     isGameStarted = false;
 
-    // تشغيل صوت الاصطدام وإيقاف الموسيقى
+    // صوت الخسارة وإيقاف الموسيقى
     hitSound.play();
     backgroundMusic.pause();
 
@@ -339,6 +343,11 @@ function gameOver(reason) {
 
     deathFall(); 
 }
+
+// حل مشكلة Autoplay: تشغيل ملف صامت عند أول لمسة
+document.addEventListener('click', () => {
+    backgroundMusic.play().then(() => backgroundMusic.pause());
+}, { once: true });
 
 drawBird();
 bird.style.display = 'none'; 
