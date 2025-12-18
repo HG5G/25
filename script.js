@@ -1,22 +1,7 @@
 // ==========================================================
-// 1. تعريف الأصوات وإعدادات التشغيل
+// 1. تعريف العناصر والثوابت
 // ==========================================================
-const jumpSound = new Audio('jump.mp3');
-const scoreSound = new Audio('score.mp3');
-const hitSound = new Audio('hit.mp3');
-const backgroundMusic = new Audio('background.mp3');
 
-// إعدادات لضمان الجاهزية
-[jumpSound, scoreSound, hitSound, backgroundMusic].forEach(sound => {
-    sound.load();
-});
-
-backgroundMusic.loop = true;
-backgroundMusic.volume = 0.3;
-
-// ==========================================================
-// 2. تعريف العناصر والثوابت
-// ==========================================================
 const gameContainer = document.querySelector('.game-container');
 const bird = document.getElementById('bird');
 const startScreen = document.getElementById('startScreen');
@@ -24,6 +9,7 @@ const scoreDisplay = document.getElementById('scoreDisplay');
 const cloudsContainer = document.querySelector('.clouds-container'); 
 const timerDisplay = document.getElementById('timerDisplay'); 
 
+// عناصر الواجهة الاحترافية المطورة
 const initialInstructions = document.getElementById('initialInstructions');
 const gameOverStats = document.getElementById('gameOverStats');
 const finalScore = document.getElementById('finalScore');
@@ -41,7 +27,7 @@ const birdDiameter = 40;
 let birdBottom = containerHeight / 2; 
 const birdLeft = 50; 
 
-let gravity = 2.5;        
+let gravity = 2.5;      
 let jumpStrength = 45;  
 let pipeGap = 200;      
 let pipeSpeed = 4;      
@@ -56,12 +42,13 @@ let score = 0;
 let deathFallTimer; 
 let pipeSpawnTimer; 
 
+// متغيرات الوقت والسكور العالي
 let startTime;
 let timerInterval;
 let highScore = localStorage.getItem('flappyHighScore') || 0;
 
 // ==========================================================
-// 3. منطق التحكم وعداد الوقت
+// 2. منطق التحكم وعداد الوقت
 // ==========================================================
 
 function updateTimer() {
@@ -90,10 +77,6 @@ function resetGame() {
     spawnInterval = 3000;
     currentPipeClass = 'level-1';
     
-    // تشغيل موسيقى الخلفية
-    backgroundMusic.currentTime = 0;
-    backgroundMusic.play().catch(e => console.log("Waiting for interaction..."));
-
     startScreen.style.display = 'none';
     startScreen.style.pointerEvents = 'none';
     mainTitle.style.display = 'block'; 
@@ -108,7 +91,7 @@ function resetGame() {
     bird.style.opacity = "1"; 
     bird.style.zIndex = "10"; 
     bird.style.transform = `rotate(0deg)`;
-    bird.style.left = birdLeft + 'px';
+    bird.style.left = birdLeft + 'px'; // إعادة التموضع الأفقي الأصلي
 
     startTime = Date.now();
     clearInterval(timerInterval);
@@ -160,14 +143,11 @@ function startGameLoop() {
 function jump() {
     if (birdBottom < containerHeight - birdDiameter - 10) {
         birdBottom += jumpStrength; 
-        // صوت النط
-        jumpSound.currentTime = 0;
-        jumpSound.play();
     }
 }
 
 // ==========================================================
-// 4. منطق الأنابيب والتصادم
+// 3. منطق الأنابيب والتصادم (الحاجز الصلب)
 // ==========================================================
 
 function randomNumber(min, max) {
@@ -212,10 +192,6 @@ function createPipes() {
                 scoreDisplay.innerText = score;
                 hasScored = true;
 
-                // صوت السكور
-                scoreSound.currentTime = 0;
-                scoreSound.play();
-
                 if (score % 10 === 0 && score <= 50) {
                     pipeSpeed += 0.3; 
                     if (spawnInterval > 1500) spawnInterval -= 250; 
@@ -231,6 +207,7 @@ function createPipes() {
                 return;
             }
 
+            // الكشف الدقيق عن التصادم
             const birdRect = bird.getBoundingClientRect();
             const topPipeRect = topPipe.getBoundingClientRect();
             const bottomPipeRect = bottomPipe.getBoundingClientRect();
@@ -240,6 +217,7 @@ function createPipes() {
                 birdRect.left < topPipeRect.right - 5 && 
                 (birdRect.top < topPipeRect.bottom - 2 || birdRect.bottom > bottomPipeRect.top + 2)
             ) {
+                // إيقاف حركة هذا الأنبوب فوراً ليظهر كحاجز
                 clearInterval(pipeTimerId);
                 gameOver("ارتطام!");
             }
@@ -253,7 +231,7 @@ function createPipes() {
 }
 
 // ==========================================================
-// 5. نظام السحاب
+// 4. نظام السحاب
 // ==========================================================
 
 function createCloud() {
@@ -285,7 +263,7 @@ function createCloud() {
 setInterval(createCloud, 10000);
 
 // ==========================================================
-// 6. النهاية والسقوط والنتائج
+// 5. النهاية والسقوط والنتائج
 // ==========================================================
 
 function deathFall() {
@@ -307,18 +285,17 @@ function gameOver(reason) {
     isGameOver = true;
     isGameStarted = false;
 
-    // صوت الخسارة وإيقاف الموسيقى
-    hitSound.play();
-    backgroundMusic.pause();
-
+    // إيقاف كل المؤقتات العامة
     clearInterval(timerInterval); 
     clearInterval(gameTimerId); 
     clearInterval(animationTimerId); 
     clearTimeout(pipeSpawnTimer);
 
+    // تثبيت العصفور أفقياً عند نقطة الارتطام
     const currentLeft = bird.offsetLeft;
     bird.style.left = currentLeft + 'px';
 
+    // تحديث الرقم القياسي
     if (score > highScore) {
         highScore = score;
         localStorage.setItem('flappyHighScore', highScore);
@@ -344,11 +321,7 @@ function gameOver(reason) {
     deathFall(); 
 }
 
-// حل مشكلة Autoplay: تشغيل ملف صامت عند أول لمسة
-document.addEventListener('click', () => {
-    backgroundMusic.play().then(() => backgroundMusic.pause());
-}, { once: true });
-
+// تشغيل أولي
 drawBird();
 bird.style.display = 'none'; 
 setTimeout(createCloud, 1000);
