@@ -91,6 +91,7 @@ function resetGame() {
     bird.style.opacity = "1"; 
     bird.style.zIndex = "10"; 
     bird.style.transform = `rotate(0deg)`;
+    bird.style.left = birdLeft + 'px'; // إعادة التموضع الأفقي الأصلي
 
     startTime = Date.now();
     clearInterval(timerInterval);
@@ -103,7 +104,6 @@ function resetGame() {
     
     animationTimerId = setInterval(animateBird, 100); 
     startGameLoop(); 
-    // تأخير بسيط لضمان استقرار الأبعاد على الموبايل قبل بدء صنع الأنابيب
     setTimeout(createPipes, 100); 
 }
 
@@ -123,7 +123,6 @@ function animateBird() {
 
 function drawBird() {
     bird.style.bottom = birdBottom + 'px';
-    bird.style.left = birdLeft + 'px';
     if (!isGameOver) {
         const rotationAngle = (birdBottom - containerHeight / 2) / 4; 
         bird.style.transform = `rotate(${rotationAngle}deg)`;
@@ -148,7 +147,7 @@ function jump() {
 }
 
 // ==========================================================
-// 3. منطق الأنابيب والتصادم الدقيق (المحسن للموبايل)
+// 3. منطق الأنابيب والتصادم (الحاجز الصلب)
 // ==========================================================
 
 function randomNumber(min, max) {
@@ -170,7 +169,6 @@ function createPipes() {
     
     topPipe.style.height = topPipeHeight + 'px';
     bottomPipe.style.height = bottomPipeHeight + 'px';
-    bottomPipe.style.bottom = (containerHeight - topPipeHeight) + 'px'; // تعديل لضمان الالتصاق بالسقف
     topPipe.style.top = 0; 
     bottomPipe.style.bottom = 0;
     
@@ -189,7 +187,6 @@ function createPipes() {
 
             const pipeLeft = containerWidth - pipeRight - pipeWidth; 
 
-            // حساب النقاط
             if (pipeLeft < birdLeft && !hasScored) {
                 score++;
                 scoreDisplay.innerText = score;
@@ -210,17 +207,19 @@ function createPipes() {
                 return;
             }
 
-            // الكشف الدقيق عن التصادم باستخدامgetBoundingClientRect (حل مشكلة الموبايل)
+            // الكشف الدقيق عن التصادم
             const birdRect = bird.getBoundingClientRect();
             const topPipeRect = topPipe.getBoundingClientRect();
             const bottomPipeRect = bottomPipe.getBoundingClientRect();
 
             if (
-                birdRect.right > topPipeRect.left + 8 && 
-                birdRect.left < topPipeRect.right - 8 && 
-                (birdRect.top < topPipeRect.bottom - 5 || birdRect.bottom > bottomPipeRect.top + 5)
+                birdRect.right > topPipeRect.left + 5 && 
+                birdRect.left < topPipeRect.right - 5 && 
+                (birdRect.top < topPipeRect.bottom - 2 || birdRect.bottom > bottomPipeRect.top + 2)
             ) {
-                gameOver("اصطدمت!");
+                // إيقاف حركة هذا الأنبوب فوراً ليظهر كحاجز
+                clearInterval(pipeTimerId);
+                gameOver("ارتطام!");
             }
         } else {
             clearInterval(pipeTimerId);
@@ -286,10 +285,15 @@ function gameOver(reason) {
     isGameOver = true;
     isGameStarted = false;
 
+    // إيقاف كل المؤقتات العامة
     clearInterval(timerInterval); 
     clearInterval(gameTimerId); 
     clearInterval(animationTimerId); 
     clearTimeout(pipeSpawnTimer);
+
+    // تثبيت العصفور أفقياً عند نقطة الارتطام
+    const currentLeft = bird.offsetLeft;
+    bird.style.left = currentLeft + 'px';
 
     // تحديث الرقم القياسي
     if (score > highScore) {
@@ -300,7 +304,6 @@ function gameOver(reason) {
     bird.src = "bird_dead.png"; 
     bird.style.zIndex = "200"; 
     bird.style.transform = `rotate(90deg)`; 
-    bird.style.opacity = "1"; 
 
     mainTitle.style.display = 'none'; 
     heroBird.src = "bird_dead.png"; 
@@ -312,7 +315,6 @@ function gameOver(reason) {
     finalScore.innerText = score;
     finalTime.innerText = timerDisplay.innerText;
     
-    // إضافة عرض السكور العالي (اختياري إذا أضفت عنصر له في HTML)
     const highScoreElement = document.getElementById('highScore');
     if(highScoreElement) highScoreElement.innerText = highScore;
 
