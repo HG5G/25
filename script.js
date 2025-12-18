@@ -17,6 +17,16 @@ const finalTime = document.getElementById('finalTime');
 const heroBird = document.getElementById('heroBird'); 
 const mainTitle = document.getElementById('mainTitle'); 
 
+// --- إضافة تعريفات الأصوات ---
+const jumpSound = new Audio('jump.mp3');
+const scoreSound = new Audio('score.mp3');
+const hitSound = new Audio('hit.mp3');
+const backgroundMusic = new Audio('background.mp3');
+
+// إعدادات الموسيقى
+backgroundMusic.loop = true;
+backgroundMusic.volume = 0.4; // خفض صوت الخلفية قليلاً
+
 const birdImages = ["bird_up.png", "bird_down.png"]; 
 let birdImageIndex = 0; 
 let animationTimerId; 
@@ -27,7 +37,7 @@ const birdDiameter = 40;
 let birdBottom = containerHeight / 2; 
 const birdLeft = 50; 
 
-let gravity = 2.5;      
+let gravity = 2.5;       
 let jumpStrength = 45;  
 let pipeGap = 200;      
 let pipeSpeed = 4;      
@@ -42,7 +52,6 @@ let score = 0;
 let deathFallTimer; 
 let pipeSpawnTimer; 
 
-// متغيرات الوقت والسكور العالي
 let startTime;
 let timerInterval;
 let highScore = localStorage.getItem('flappyHighScore') || 0;
@@ -77,6 +86,10 @@ function resetGame() {
     spawnInterval = 3000;
     currentPipeClass = 'level-1';
     
+    // تشغيل موسيقى الخلفية عند البدء
+    backgroundMusic.currentTime = 0;
+    backgroundMusic.play().catch(e => console.log("Audio play deferred"));
+
     startScreen.style.display = 'none';
     startScreen.style.pointerEvents = 'none';
     mainTitle.style.display = 'block'; 
@@ -91,7 +104,7 @@ function resetGame() {
     bird.style.opacity = "1"; 
     bird.style.zIndex = "10"; 
     bird.style.transform = `rotate(0deg)`;
-    bird.style.left = birdLeft + 'px'; // إعادة التموضع الأفقي الأصلي
+    bird.style.left = birdLeft + 'px';
 
     startTime = Date.now();
     clearInterval(timerInterval);
@@ -143,11 +156,14 @@ function startGameLoop() {
 function jump() {
     if (birdBottom < containerHeight - birdDiameter - 10) {
         birdBottom += jumpStrength; 
+        // تشغيل صوت القفز
+        jumpSound.currentTime = 0;
+        jumpSound.play();
     }
 }
 
 // ==========================================================
-// 3. منطق الأنابيب والتصادم (الحاجز الصلب)
+// 3. منطق الأنابيب والتصادم
 // ==========================================================
 
 function randomNumber(min, max) {
@@ -192,6 +208,10 @@ function createPipes() {
                 scoreDisplay.innerText = score;
                 hasScored = true;
 
+                // تشغيل صوت السكور
+                scoreSound.currentTime = 0;
+                scoreSound.play();
+
                 if (score % 10 === 0 && score <= 50) {
                     pipeSpeed += 0.3; 
                     if (spawnInterval > 1500) spawnInterval -= 250; 
@@ -207,7 +227,6 @@ function createPipes() {
                 return;
             }
 
-            // الكشف الدقيق عن التصادم
             const birdRect = bird.getBoundingClientRect();
             const topPipeRect = topPipe.getBoundingClientRect();
             const bottomPipeRect = bottomPipe.getBoundingClientRect();
@@ -217,7 +236,6 @@ function createPipes() {
                 birdRect.left < topPipeRect.right - 5 && 
                 (birdRect.top < topPipeRect.bottom - 2 || birdRect.bottom > bottomPipeRect.top + 2)
             ) {
-                // إيقاف حركة هذا الأنبوب فوراً ليظهر كحاجز
                 clearInterval(pipeTimerId);
                 gameOver("ارتطام!");
             }
@@ -285,17 +303,18 @@ function gameOver(reason) {
     isGameOver = true;
     isGameStarted = false;
 
-    // إيقاف كل المؤقتات العامة
+    // تشغيل صوت الاصطدام وإيقاف الموسيقى
+    hitSound.play();
+    backgroundMusic.pause();
+
     clearInterval(timerInterval); 
     clearInterval(gameTimerId); 
     clearInterval(animationTimerId); 
     clearTimeout(pipeSpawnTimer);
 
-    // تثبيت العصفور أفقياً عند نقطة الارتطام
     const currentLeft = bird.offsetLeft;
     bird.style.left = currentLeft + 'px';
 
-    // تحديث الرقم القياسي
     if (score > highScore) {
         highScore = score;
         localStorage.setItem('flappyHighScore', highScore);
@@ -321,7 +340,6 @@ function gameOver(reason) {
     deathFall(); 
 }
 
-// تشغيل أولي
 drawBird();
 bird.style.display = 'none'; 
 setTimeout(createCloud, 1000);
